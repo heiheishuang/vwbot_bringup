@@ -32,7 +32,7 @@ namespace vwpp
         geometry_msgs::TwistStamped cmd_vel_stamped_;
 
         ros::NodeHandle nh;
-        ros::Publisher cmd_vel_sub;
+        ros::Subscriber cmd_vel_sub;
     };
     
 } // namespace vwpp

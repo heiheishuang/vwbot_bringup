@@ -54,7 +54,7 @@ VwbotRosDriver::VwbotRosDriver():
         ROS_WARN("%s, use the default msg_length %d", this->node_name.c_str(), this->msg_length);
     }
 
-    this->vwbot_serial_hardware = new SanchiSerialHardware(this->model,
+    this->vwbot_serial_hardware = new VwbotSerialHardware(this->model,
                                                     this->port,
                                                     this->baud,
                                                     this->msg_length);
@@ -81,7 +81,7 @@ VwbotRosDriver::VwbotRosDriver():
         ROS_WARN("%s, use the default cmd_vel topic name %s", this->node_name.c_str(), cmd_vel_sub_topic_name.c_str());
     }
 
-    this->cmd_vel_sub = nh.subscribe<geometry_msgs::TwistStamped>(cmd_vel_sub_topic_name, 1, cmd_vel_stamped_cb);
+    this->cmd_vel_sub = nh.subscribe<geometry_msgs::TwistStamped>(cmd_vel_sub_topic_name, 1, &VwbotRosDriver::cmd_vel_stamped_cb, this);
 
 }
 
@@ -102,7 +102,7 @@ void VwbotRosDriver::cmd_vel_stamped_cb(const geometry_msgs::TwistStamped::Const
     vwbot_cmd_vel.y = msg->twist.linear.y;
     vwbot_cmd_vel.yaw = msg->twist.angular.z;
 
-    if (this->vwbot_serial_hardware.sendMessage(vwbot_cmd_vel) != 1)
+    if (this->vwbot_serial_hardware->sendMessage(vwbot_cmd_vel) != 1)
     {
         ROS_ERROR("%s, Send Message failed!", this->node_name.c_str());
     }

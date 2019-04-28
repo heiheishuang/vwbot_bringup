@@ -88,7 +88,7 @@ int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
     }
 
 
-    if (this->boost_serial_communicator.sendMessage(msg_buffer) == 1)
+    if (this->boost_serial_communicator->sendMessage(msg_buffer) == 1)
     {
         return 1;
     }
