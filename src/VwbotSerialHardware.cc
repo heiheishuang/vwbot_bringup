@@ -41,12 +41,14 @@ VwbotSerialHardware::VwbotSerialHardware(std::string model_, std::string port_, 
 
 }
 
+
 VwbotSerialHardware::~VwbotSerialHardware()
 {
     delete   this->boost_serial_communicator;
     delete[] this->msg_start;
     delete[] this->msg_stop;
 }
+
 
 int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
 {
@@ -55,89 +57,47 @@ int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
     vec_msg.push_back(0x5B);
     vec_msg.push_back(11);
 
-    uint8_t vel_x =     
-}
+    int16_t vel_x = round_float(vel_.x*100);
+    uint8_t vel_x_hbits = uint8_t(vel_x >> 8);
+    uint8_t vel_x_lbits = uint8_t(vel_x & (0x00FF));
+    vec_msg.push_back(vel_x_hbits);
+    vec_msg.push_back(vel_x_lbits);
 
-std::queue<SanchiSerialHardware::SanchiData> SanchiSerialHardware::readData()
-{
-    static uint8_t* data_raw;
+    int16_t vel_y = round_float(vel_.y*100);
+    uint8_t vel_y_hbits = uint8_t(vel_y >> 8);
+    uint8_t vel_y_lbits = uint8_t(vel_y & (0x00FF));
+    vec_msg.push_back(vel_y_hbits);
+    vec_msg.push_back(vel_y_lbits);
 
-    data_raw = boost_serial_communicator->getMessage(this->msg_length);
+    int16_t vel_yaw = round_float(vel_.yaw*100);
+    uint8_t vel_yaw_hbits = uint8_t(vel_yaw >> 8);
+    uint8_t vel_yaw_lbits = uint8_t(vel_yaw & (0x00FF));
+    vec_msg.push_back(vel_yaw_hbits);
+    vec_msg.push_back(vel_yaw_lbits);
 
-    int flag_msg_rev = 0;
+    // 校验和,只累加三轴速度值
+    uint8_t checksum = (vel_x + vel_y + vel_yaw) % 256;
+    vec_msg.push_back(checksum);
 
-    // When get the new data_raw, clean up the queue buf before.
-    while ( !(this->que_sanchi_data.empty()) ) 
+    vec_msg.push_back(0xBB);
+
+    uint8_t* msg_buffer = new uint8_t[vec_msg.size()];
+    if (!vec_msg.empty())
     {
-        this->que_sanchi_data.pop();
+        memcpy(msg_buffer, &vec_msg[0], vec_msg.size()*sizeof(uint8_t));
     }
 
-    const int msg_buf_length = 2*(this->msg_length);
-    for (int header_index = 0; header_index < (msg_buf_length - 1); ++header_index)
+
+    if (this->boost_serial_communicator.sendMessage(msg_buffer) == 1)
     {
-        if(model == "100D2" && data_raw[header_index] == 0xA5 && data_raw[header_index + 1] == 0x5A)
-        {
-            // When the data queue get errors.
-            if (boost_serial_communicator->fixError(header_index, this->msg_length) == -1)
-            {
-                // continue;
-                break;
-            }
-
-
-            unsigned char *data = data_raw + header_index;
-            uint8_t data_length = data[2];
-
-
-            uint32_t checksum = 0;
-            for(int i = 0; i < data_length - 1  ; ++i)
-            {
-                checksum += (uint32_t) data[i+2];
-            }
-
-            uint16_t check = checksum % 256;
-            uint16_t check_true = data[data_length+1];
-
-            if (check != check_true)
-            {
-                std::cout << "check error" << std::endl;
-                continue;
-            }
-
-
-            SanchiData per_sanchi_data;
-            Eigen::Vector3d ea0(-d2f_euler(data + 3) * M_PI / 180.0,
-                                 d2f_euler(data + 7) * M_PI / 180.0,
-                                 d2f_euler(data + 5) * M_PI / 180.0);
-            Eigen::Matrix3d R;
-            R = Eigen::AngleAxisd(ea0[0], ::Eigen::Vector3d::UnitZ())
-                * Eigen::AngleAxisd(ea0[1], ::Eigen::Vector3d::UnitY())
-                * Eigen::AngleAxisd(ea0[2], ::Eigen::Vector3d::UnitX());
-            Eigen::Quaterniond q;
-            q = R;
-            per_sanchi_data.q_.w = (double)q.w();
-            per_sanchi_data.q_.x = (double)q.x();
-            per_sanchi_data.q_.y = (double)q.y();
-            per_sanchi_data.q_.z = (double)q.z();
-
-            per_sanchi_data.av_.x = d2f_gyro(data + 15) * M_PI /180;
-            per_sanchi_data.av_.y = d2f_gyro(data + 17) * M_PI /180;
-            per_sanchi_data.av_.z = d2f_gyro(data + 19) * M_PI /180;
-
-            per_sanchi_data.la_.x = d2f_acc(data + 9) * 9.81;
-            per_sanchi_data.la_.y = d2f_acc(data + 11) * 9.81;
-            per_sanchi_data.la_.z = d2f_acc(data + 13) * 9.81;
-
-            per_sanchi_data.mf_.x = d2f_mag(data + 21);
-            per_sanchi_data.mf_.y = d2f_mag(data + 23);
-            per_sanchi_data.mf_.z = d2f_mag(data + 25);
-
-            this->que_sanchi_data.push(per_sanchi_data);
-        }
-
+        return 1;
+    }
+    else 
+    {
+        std::cerr << "\033[31m" << "Send message failed"
+                  << "\033[0m"  << std::endl;
+        return (-1);
     }
 
-    delete[] data_raw;
-
-    return (this->que_sanchi_data);
+    
 }
