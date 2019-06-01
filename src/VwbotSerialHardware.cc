@@ -1,3 +1,7 @@
+#include <utility>
+
+#include <utility>
+
 #include <vwbot_bringup/VwbotSerialHardware.h>
 #include <vwbot_bringup/utils.h>
 #include <eigen3/Eigen/Geometry> 
@@ -11,8 +15,8 @@ VwbotSerialHardware::VwbotSerialHardware(std::string model_, std::string port_, 
                                            boost_serial_base::flow_control::type fc_type_,
                                            boost_serial_base::parity::type pa_type_, 
                                            boost_serial_base::stop_bits::type st_type_):
-    model(model_),
-    port(port_),
+    model(std::move(model_)),
+    port(std::move(port_)),
     baud(baud_),
     msg_length(msg_length_),
     fc_type(fc_type_),
@@ -53,35 +57,44 @@ VwbotSerialHardware::~VwbotSerialHardware()
 int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
 {
     std::vector<uint8_t> vec_msg;
+    // Header
     vec_msg.push_back(0xB5);
     vec_msg.push_back(0x5B);
-    vec_msg.push_back(11);
+    // Host ID
+    vec_msg.push_back(0x01);
+    // data length
+    vec_msg.push_back(0x06);
 
     int16_t vel_x = round_float(vel_.x*100);
-    uint8_t vel_x_hbits = uint8_t(vel_x >> 8);
-    uint8_t vel_x_lbits = uint8_t(vel_x & (0x00FF));
+    auto vel_x_hbits = uint8_t(vel_x >> 8);
+    auto vel_x_lbits = uint8_t(vel_x & (0x00FF));
     vec_msg.push_back(vel_x_hbits);
     vec_msg.push_back(vel_x_lbits);
 
     int16_t vel_y = round_float(vel_.y*100);
-    uint8_t vel_y_hbits = uint8_t(vel_y >> 8);
-    uint8_t vel_y_lbits = uint8_t(vel_y & (0x00FF));
+    auto vel_y_hbits = uint8_t(vel_y >> 8);
+    auto vel_y_lbits = uint8_t(vel_y & (0x00FF));
     vec_msg.push_back(vel_y_hbits);
     vec_msg.push_back(vel_y_lbits);
 
     int16_t vel_yaw = round_float(vel_.yaw*100);
-    uint8_t vel_yaw_hbits = uint8_t(vel_yaw >> 8);
-    uint8_t vel_yaw_lbits = uint8_t(vel_yaw & (0x00FF));
+    auto vel_yaw_hbits = uint8_t(vel_yaw >> 8);
+    auto vel_yaw_lbits = uint8_t(vel_yaw & (0x00FF));
     vec_msg.push_back(vel_yaw_hbits);
     vec_msg.push_back(vel_yaw_lbits);
 
-    // 校验和,只累加三轴速度值
-    uint8_t checksum = (vel_x + vel_y + vel_yaw) % 256;
+    // checksum, add all the data before the checksum byte, include the headers.
+    int data_sum = 0;
+    for (auto item : vec_msg)
+    {
+        data_sum += item;
+    }
+    uint8_t checksum = (data_sum) % 256;
     vec_msg.push_back(checksum);
 
     vec_msg.push_back(0xBB);
 
-    uint8_t* msg_buffer = new uint8_t[vec_msg.size()];
+    auto* msg_buffer = new uint8_t[vec_msg.size()];
     if (!vec_msg.empty())
     {
         memcpy(msg_buffer, &vec_msg[0], vec_msg.size()*sizeof(uint8_t));
@@ -101,3 +114,4 @@ int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
 
     
 }
+

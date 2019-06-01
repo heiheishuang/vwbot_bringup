@@ -1,3 +1,6 @@
+#ifndef VWBOTROSDRIVER_H_
+#define VWBOTROSDRIVER_H_
+
 #include <string>
 #include <queue>
 
@@ -36,3 +39,5 @@ namespace vwpp
     };
     
 } // namespace vwpp
+
+#endif
