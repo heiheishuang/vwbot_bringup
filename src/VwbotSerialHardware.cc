@@ -7,6 +7,7 @@
 #include <eigen3/Eigen/Geometry> 
 #include <iostream>
 #include <vector>
+#include <iomanip>
 
 using namespace vwpp;
 
@@ -34,9 +35,10 @@ VwbotSerialHardware::VwbotSerialHardware(std::string model_, std::string port_, 
 
     if(model == "VWBOT_G1")
     {
-        boost_serial_communicator->sendMessage(msg_stop);
+        // TODO Add the start and stop header.
+        // boost_serial_communicator->sendMessage(msg_stop);
         usleep(1000 * 1000);
-        boost_serial_communicator->sendMessage(msg_start);
+        // boost_serial_communicator->sendMessage(msg_start);
         usleep(1000 * 1000);
     }
 
@@ -90,18 +92,14 @@ int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
         data_sum += item;
     }
     uint8_t checksum = (data_sum) % 256;
+
+
     vec_msg.push_back(checksum);
 
     vec_msg.push_back(0xBB);
 
-    auto* msg_buffer = new uint8_t[vec_msg.size()];
-    if (!vec_msg.empty())
-    {
-        memcpy(msg_buffer, &vec_msg[0], vec_msg.size()*sizeof(uint8_t));
-    }
 
-
-    if (this->boost_serial_communicator->sendMessage(msg_buffer) == 1)
+    if (this->boost_serial_communicator->sendMessage(vec_msg) == 1)
     {
         return 1;
     }
@@ -112,6 +110,5 @@ int VwbotSerialHardware::sendMessage(VwbotSerialHardware::Velocity2D vel_)
         return (-1);
     }
 
-    
 }
 

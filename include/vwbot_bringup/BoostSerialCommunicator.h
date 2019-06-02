@@ -24,9 +24,10 @@ namespace vwpp
     
         virtual ~BoostSerialCommunicator();
 
-        uint8_t* getMessage(const int msg_length_);
-        int sendMessage(const uint8_t* msg_);
-        int fixError(const int header_index_, const int msg_length_);
+        uint8_t* getMessage(int msg_length_);
+        // int sendMessage(const uint8_t* msg_);
+        int sendMessage(const std::vector<uint8_t>& vec_msg_);
+        int fixError(int header_index_, int msg_length_);
 
     protected:
 

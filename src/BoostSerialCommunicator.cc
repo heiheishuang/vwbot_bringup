@@ -89,18 +89,21 @@ uint8_t* BoostSerialCommunicator::getMessage(const int msg_length_)
 }
 
 
-int BoostSerialCommunicator::sendMessage(const uint8_t* msg_)
+int BoostSerialCommunicator::sendMessage(const std::vector<uint8_t>& vec_msg_)
 {
-    if (!msg_)
+    auto* msg_buffer = new uint8_t[vec_msg_.size()];
+    if (!vec_msg_.empty())
     {
-        std::cerr << "\033[31m" << "Send message mustn't be NULL!" 
+        memcpy(msg_buffer, &vec_msg_[0], vec_msg_.size()*sizeof(uint8_t));
+    }
+    else
+    {
+        std::cerr << "\033[31m" << "Send message mustn't be EMPTY!"
                   << "\033[0m" << std::endl;
-
-        // When prepare sending a msg but the msg value NULL, return -1.
         return (-1);
     }
 
-    write(fd_, msg_, sizeof(msg_)/sizeof(msg_[0]));
+    write(fd_, msg_buffer, vec_msg_.size());
     return 1;
 }
 
@@ -123,3 +126,4 @@ int BoostSerialCommunicator::fixError(const int header_index_, const int msg_len
     // No problem, return value 1.
     return 1;
 }
+
