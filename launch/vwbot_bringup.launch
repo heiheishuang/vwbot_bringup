@@ -9,7 +9,7 @@
     <param name="baud" value="115200"/>
     <param name="frame_id" value="base_link"/>
     <param name="msg_length" value="6"/>
-    <param name="cmd_vel_topic" value="/cmd_vel_stamped"/>
+    <param name="cmd_vel_topic" value="/cmd_vel_unstamped"/>
     <param name="communication_hz" value="100"/>
   </node>
 

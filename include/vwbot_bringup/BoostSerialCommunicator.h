@@ -8,6 +8,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 
+#include <boost/thread.hpp>
+
 
 namespace vwpp
 {
@@ -17,16 +19,19 @@ namespace vwpp
     {
     public:
         BoostSerialCommunicator();
-        BoostSerialCommunicator(std::string port_, int baud_, 
-                           boost_serial_base::flow_control::type fc_type_ = boost_serial_base::flow_control::none, 
-                           boost_serial_base::parity::type pa_type_ = boost_serial_base::parity::none, 
-                           boost_serial_base::stop_bits::type st_type_ = boost_serial_base::stop_bits::one);
-    
+
+        BoostSerialCommunicator(std::string port_, int baud_,
+                                boost_serial_base::flow_control::type fc_type_ = boost_serial_base::flow_control::none,
+                                boost_serial_base::parity::type pa_type_ = boost_serial_base::parity::none,
+                                boost_serial_base::stop_bits::type st_type_ = boost_serial_base::stop_bits::one);
+
         virtual ~BoostSerialCommunicator();
 
         uint8_t* getMessage(int msg_length_);
+
         // int sendMessage(const uint8_t* msg_);
-        int sendMessage(const std::vector<uint8_t>& vec_msg_);
+        int sendMessage(const std::vector<uint8_t> &vec_msg_);
+
         int fixError(int header_index_, int msg_length_);
 
     protected:
@@ -34,6 +39,8 @@ namespace vwpp
     private:
         boost::asio::serial_port* serial_port;
         int fd_;
+
+        boost::mutex mutex_send_msg;
 
     }; // class BoostSerialCommunicator 
 

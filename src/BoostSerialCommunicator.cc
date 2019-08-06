@@ -1,43 +1,43 @@
-#include <vwbot_bringup/BoostSerialCommunicator.h>
+#include <sanchi_driver/BoostSerialCommunicator.h>
 #include <iostream>
 
 using namespace vwpp;
 
 
-BoostSerialCommunicator::BoostSerialCommunicator():
-    fd_(-1),
-    serial_port(nullptr)
+BoostSerialCommunicator::BoostSerialCommunicator() :
+        fd_(-1),
+        serial_port(nullptr)
 {
 
 }
 
 
-BoostSerialCommunicator::BoostSerialCommunicator(std::string port_, int baud_, 
-                                       boost_serial_base::flow_control::type fc_type_, 
-                                       boost_serial_base::parity::type pa_type_, 
-                                       boost_serial_base::stop_bits::type st_type_)
+BoostSerialCommunicator::BoostSerialCommunicator(std::string port_, int baud_,
+                                                 boost_serial_base::flow_control::type fc_type_,
+                                                 boost_serial_base::parity::type pa_type_,
+                                                 boost_serial_base::stop_bits::type st_type_)
 {
     BoostSerialCommunicator();
 
 
     boost::asio::io_service tmp_io_service;
     serial_port = new boost::asio::serial_port(tmp_io_service);
-    
+
     try
     {
         serial_port->open(port_);
     }
     catch (boost::system::system_error &error)
     {
-        std::cerr << "\033[31m" << "Failed to open port " << port_.c_str() 
+        std::cerr << "\033[31m" << "Failed to open port " << port_.c_str()
                   << " with error " << error.what() << "\033[0m" << std::endl;
         exit(1);
     }
 
     if (!serial_port->is_open())
     {
-        std::cerr << "\033[31m" << "Failed to open port " << port_.c_str() 
-                  << "\033[0m" << std::endl; 
+        std::cerr << "\033[31m" << "Failed to open port " << port_.c_str()
+                  << "\033[0m" << std::endl;
         exit(1);
     }
 
@@ -53,16 +53,16 @@ BoostSerialCommunicator::BoostSerialCommunicator(std::string port_, int baud_,
     serial_port->set_option(stop_bits_option);
 
 
-    const char *path = port_.c_str();
+    const char* path = port_.c_str();
     fd_ = open(path, O_RDWR);
-    if(fd_ < 0)
-    {    
-        std::cerr << "\033[31m" << "Port Error: " << path 
+    if (fd_ < 0)
+    {
+        std::cerr << "\033[31m" << "Port Error: " << path
                   << "\033[0m" << std::endl;
         exit(1);
     }
 
-    std::cout << "\033[32m" << "Successfully open serial device: "  << port_ 
+    std::cout << "\033[32m" << "Successfully open serial device: " << port_
               << "\033[0m" << std::endl;
 }
 
@@ -75,7 +75,7 @@ BoostSerialCommunicator::~BoostSerialCommunicator()
 
 uint8_t* BoostSerialCommunicator::getMessage(const int msg_length_)
 {
-    int msg_buf_length = 2*msg_length_;
+    int msg_buf_length = 2 * msg_length_;
 
     uint8_t* tmp = new uint8_t[msg_buf_length];
     read(fd_, tmp, sizeof(uint8_t) * msg_buf_length);
@@ -89,12 +89,12 @@ uint8_t* BoostSerialCommunicator::getMessage(const int msg_length_)
 }
 
 
-int BoostSerialCommunicator::sendMessage(const std::vector<uint8_t>& vec_msg_)
+int BoostSerialCommunicator::sendMessage(const std::vector<uint8_t> &vec_msg_)
 {
     auto* msg_buffer = new uint8_t[vec_msg_.size()];
     if (!vec_msg_.empty())
     {
-        memcpy(msg_buffer, &vec_msg_[0], vec_msg_.size()*sizeof(uint8_t));
+        memcpy(msg_buffer, &vec_msg_[0], vec_msg_.size() * sizeof(uint8_t));
     }
     else
     {
@@ -103,6 +103,7 @@ int BoostSerialCommunicator::sendMessage(const std::vector<uint8_t>& vec_msg_)
         return (-1);
     }
 
+    boost::unique_lock<boost::mutex> unique_lock_send_msg(mutex_send_msg);
     write(fd_, msg_buffer, vec_msg_.size());
     return 1;
 }
@@ -110,7 +111,7 @@ int BoostSerialCommunicator::sendMessage(const std::vector<uint8_t>& vec_msg_)
 
 int BoostSerialCommunicator::fixError(const int header_index_, const int msg_length_)
 {
-    const int msg_buf_length = 2*msg_length_;
+    const int msg_buf_length = 2 * msg_length_;
 
     if (header_index_ > msg_length_ && header_index_ < msg_buf_length)
     {

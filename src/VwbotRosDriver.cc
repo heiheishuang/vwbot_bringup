@@ -70,7 +70,7 @@ VwbotRosDriver::VwbotRosDriver():
     }
 
     // TODO: Consider add to the initial list.
-    std::string cmd_vel_sub_topic_name = "/cmd_vel_stamped";
+    std::string cmd_vel_sub_topic_name = "/cmd_vel_unstamped";
     if (nh.hasParam("cmd_vel_topic"))
     {
         nh.getParam("cmd_vel_topic", cmd_vel_sub_topic_name);
@@ -81,7 +81,7 @@ VwbotRosDriver::VwbotRosDriver():
         ROS_WARN("%s, use the default cmd_vel topic name %s", this->node_name.c_str(), cmd_vel_sub_topic_name.c_str());
     }
 
-    this->cmd_vel_sub = nh.subscribe<geometry_msgs::TwistStamped>(cmd_vel_sub_topic_name, 1, &VwbotRosDriver::cmd_vel_stamped_cb, this);
+    this->cmd_vel_sub = nh.subscribe<geometry_msgs::Twist>(cmd_vel_sub_topic_name, 1, &VwbotRosDriver::cmd_vel_stamped_cb, this);
 
 }
 
@@ -94,13 +94,13 @@ VwbotRosDriver::~VwbotRosDriver()
 
 
 
-void VwbotRosDriver::cmd_vel_stamped_cb(const geometry_msgs::TwistStamped::ConstPtr& msg)
+void VwbotRosDriver::cmd_vel_stamped_cb(const geometry_msgs::Twist::ConstPtr& msg)
 {
 
-    VwbotSerialHardware::Velocity2D vwbot_cmd_vel;
-    vwbot_cmd_vel.x = msg->twist.linear.x;
-    vwbot_cmd_vel.y = msg->twist.linear.y;
-    vwbot_cmd_vel.yaw = msg->twist.angular.z;
+    VwbotSerialHardware::Velocity2D vwbot_cmd_vel{};
+    vwbot_cmd_vel.x = msg->linear.x;
+    vwbot_cmd_vel.y = msg->linear.y;
+    vwbot_cmd_vel.yaw = msg->angular.z;
 
     if (this->vwbot_serial_hardware->sendMessage(vwbot_cmd_vel) != 1)
     {
@@ -108,3 +108,4 @@ void VwbotRosDriver::cmd_vel_stamped_cb(const geometry_msgs::TwistStamped::Const
     }
 
 }
+
